@@ -1,0 +1,122 @@
+name: Relay Proxy
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/relay-proxy.yml
+
+jobs:
+  proxy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Create HTTP Proxy
+        run: |
+          cat > /tmp/proxy.py << 'PYEOF'
+import http.server
+import urllib.request
+import urllib.error
+import ssl
+import sys
+import os
+
+class ProxyHandler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.proxy_request("GET")
+    
+    def do_POST(self):
+        self.proxy_request("POST")
+    
+    def do_HEAD(self):
+        self.proxy_request("HEAD")
+    
+    def proxy_request(self, method):
+        # URL 格式: /proxy?url=https://example.com/path
+        if not self.path.startswith("/proxy"):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Relay Proxy OK. Use /proxy?url=...")
+            return
+        
+        import urllib.parse
+        parsed = urllib.parse.urlparse(self.path)
+        params = urllib.parse.parse_qs(parsed.query)
+        target_url = params.get("url", [None])[0]
+        
+        if not target_url:
+            self.send_response(400)
+            self.end_headers()
+            self.wfile.write(b"Missing ?url= parameter")
+            return
+        
+        try:
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            
+            body = None
+            if method == "POST":
+                content_len = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(content_len)
+            
+            req = urllib.request.Request(
+                target_url,
+                data=body,
+                headers={
+                    "User-Agent": self.headers.get("User-Agent", "Mozilla/5.0"),
+                    "Accept": self.headers.get("Accept", "*/*"),
+                    "Accept-Language": self.headers.get("Accept-Language", "en-US"),
+                },
+                method=method
+            )
+            
+            resp = urllib.request.urlopen(req, timeout=30, context=ctx)
+            self.send_response(resp.status)
+            
+            skip_headers = {"transfer-encoding", "content-encoding"}
+            for k, v in resp.headers.items():
+                if k.lower() not in skip_headers:
+                    self.send_header(k, v)
+            self.send_header("X-Proxy", "github-actions-relay")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            
+            self.wfile.write(resp.read())
+            
+        except urllib.error.HTTPError as e:
+            self.send_response(e.code)
+            self.end_headers()
+            self.wfile.write(e.read())
+        except Exception as e:
+            self.send_response(502)
+            self.end_headers()
+            self.wfile.write(f"Proxy Error: {str(e)}".encode())
+    
+    def log_message(self, format, *args):
+        print(f"[{self.log_date_time_string()}] {args[0]}", flush=True)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8888))
+    server = http.server.HTTPServer(("0.0.0.0", port), ProxyHandler)
+    print(f"Proxy server running on port {port}", flush=True)
+    server.serve_forever()
+PYEOF
+          
+          python3 /tmp/proxy.py &
+          sleep 2
+          echo "Proxy started on port 8888"
+          
+          # 通过 localhost.run 暴露
+          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 \
+            -R 80:localhost:8888 localhost.run 2>&1 &
+          
+          sleep 10
+          echo "Tunnel established"
+          
+          # 保持运行 5.5 小时
+          sleep 19800
