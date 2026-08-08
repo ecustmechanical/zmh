@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - .github/workflows/relay-proxy.yml
+      - .github/trigger-relay.txt
 
 jobs:
   proxy:
